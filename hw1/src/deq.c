@@ -23,8 +23,54 @@ static Rep rep(Deq q) {
   return (Rep)q;
 }
 
-static void put(Rep r, End e, Data d) {}
-static Data ith(Rep r, End e, int i)  { return 0; }
+static void put(Rep r, End e, Data d) 
+{
+  Node n = malloc(sizeof(*n));
+  if (!n) ERROR("malloc() failed");
+  n->data = d;
+
+  if (e == Head) {
+    n->np[Head] = 0;
+    n->np[Tail] = r->ht[Head];
+    if (r->ht[Head]) {
+      r->ht[Head]->np[Head] = n;
+    } else {
+      r->ht[Tail] = n;
+    }
+    r->ht[Head] = n;
+  } else {
+    n->np[Tail] = 0;
+    n->np[Head] = r->ht[Tail];
+    if (r->ht[Tail]) {
+      r->ht[Tail]->np[Tail] = n;
+    } else {
+      r->ht[Head] = n;
+    }
+    r->ht[Tail] = n;
+  }
+  r->len++;
+}
+
+static Data ith(Rep r, End e, int i)  
+{ 
+  if (i < 0 || i >= r->len) {
+      return 0; 
+  }
+  if (e == Head) { //head
+    Node current = rep(q)->ht[Head];
+    for (iter = 0; iter < i; iter++) {
+      current = current->np[Tail];
+    }
+    return current->data;
+  } else { //tail
+    Node current = rep(q)->ht[Tail];
+    for (iter = 0; iter < i; iter++) {
+      current = current->np[Head];
+    }
+    return current->data;
+  }
+}
+
 static Data get(Rep r, End e)         { return 0; }
 static Data rem(Rep r, End e, Data d) { return 0; }
 
