@@ -46,8 +46,6 @@ static void put(Rep r, End e, Data d) {
       r->ht[Head] = n;
     }
     r->ht[Tail] = n;
-  } else {
-    return 0;
   }
   r->len++;
 }
@@ -56,13 +54,14 @@ static Data ith(Rep r, End e, int i) {
   if (i < 0 || i >= r->len) {
       return 0; 
   }
+  int iter;
   if (e == Head) { //head
     Node current = r->ht[Head];
     for (iter = 0; iter < i; iter++) {
       current = current->np[Tail];
     }
     return current->data;
-  } else (e == Tail) { //tail
+  } else if (e == Tail) { //tail
     Node current = r->ht[Tail];
     for (iter = 0; iter < i; iter++) {
       current = current->np[Head];
@@ -74,7 +73,7 @@ static Data ith(Rep r, End e, int i) {
 }
 
 static Data get(Rep r, End e) {
-  if (r->len <= 0 || rep(q)->ht[Head] == NULL || rep(q)->ht[Tail] == NULL) {
+  if (r->len <= 0 || r->ht[Head] == NULL || r->ht[Tail] == NULL) {
       return 0; 
   }
   //if head
@@ -106,6 +105,7 @@ static Data get(Rep r, End e) {
 static Data rem(Rep r, End e, Data d) {
   //Loop through from selected end to find equal node data
   //If head
+  Node current;
   if (e == Head) {
     Node current = r->ht[Head];
     while (current->data != d) {
