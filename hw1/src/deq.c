@@ -73,76 +73,64 @@ static Data ith(Rep r, End e, int i) {
 }
 
 static Data get(Rep r, End e) {
-  if (r->len <= 0 || r->ht[Head] == NULL || r->ht[Tail] == NULL) {
-      return 0; 
+  if (r->len <= 0 || (e != Head && e != Tail)) {
+    return 0; 
   }
-  //if head
-  if (e == Head) {
-    //grab head and assign returnNode to have it's pointer
-    Node returnNode = r->ht[Head];
-    //update rep's head
-    r->ht[Head] = returnNode->np[Tail];
-    // remove pointer
-    returnNode->np[Tail]->np[Head] = NULL;
-    // Make len shorter
-    r->len--;
-    return returnNode->data;
-  } else if (e == Tail) {
-    //grab tail and assign returnNode to have it's pointer
-    Node returnNode = r->ht[Tail];
-    //update rep's tail
-    r->ht[Tail] = returnNode->np[Head];
-    // remove pointer
-    returnNode->np[Head]->np[Tail] = NULL;
-    // Make len shorter
-    r->len--;
-    return returnNode->data;
-  } else {
+
+  Node returnNode = r->ht[e];
+  if (!returnNode) {
     return 0;
   }
+
+  End oppositeEnd = 1 - e;
+  r->ht[e] = returnNode->np[oppositeEnd];
+
+  if (r->ht[e]) {
+    r->ht[e]->np[e] = NULL; //removes the new head node's head pointer
+  } else {
+    r->ht[oppositeEnd] = NULL; //if the queue is now empty, remove the pointer on the otherside
+  }
+
+  r->len--;
+  Data d = returnNode->data;
+  free(returnNode);
+  return d;
 }
 
 static Data rem(Rep r, End e, Data d) {
+  if (r->len <= 0 || (e != Head && e != Tail)) {
+    return 0; 
+  }
+  End oppositeEnd = 1 - e; 
+
+
   //Loop through from selected end to find equal node data
-  //If head
-  Node current;
-  if (e == Head) {
-    Node current = r->ht[Head];
-    while (current->data != d) {
-      if (current->np[Tail] == NULL) {
-        return 0;
-      }
-      current = current->np[Tail];
+  Node current = r->ht[e];
+  while (current->data != d) {
+    if (current->np[oppositeEnd] == NULL) {
+      return 0;
     }
-  } else if (e == Tail) {
-    Node current = r->ht[Tail];
-    while (current->data != d) {
-      if (current->np[Head] == NULL) {
-        return 0;
-      }
-      current = current->np[Head];
-    }
-  } else {
-    //e isnt valid
-    return 0;
+    current = current->np[oppositeEnd];
   }
 
   //Found the correct node
   //check if end? if so use get function
-  if (current == r->ht[Head] || current == r->ht[Tail]) {
-    return get(r, e);
+  if (current == r->ht[Head]) {
+    return get(r, Head);
+  } else if (current == r->ht[Tail]) {
+    return get(r, Tail);
   }
-  //if in mid
-  //Fix head of current
-  current->np[Head]->np[Tail] = current->np[Tail];
-  //Fix tail of current
-  current->np[Tail]->np[Head] = current->np[Head];
-  //reduce len
-  r->len--;
 
-  //return current data
-  return current->data;
-  }
+  //if in mid
+  //Fix head and tail of current
+  current->np[Head]->np[Tail] = current->np[Tail];
+  current->np[Tail]->np[Head] = current->np[Head];
+
+  r->len--;
+  Data foundData = current->data;
+  free(current);
+  return foundData;
+}
 
 extern Deq deq_new() {
   Rep r=(Rep)malloc(sizeof(*r));
