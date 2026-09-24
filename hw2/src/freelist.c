@@ -119,6 +119,7 @@ extern void  freelistfree(FreeList f, void *base, void *mem, int e, int l) {
 
 extern int freelistsize(FreeList f, void *base, void *mem, int l, int u) {
     (void)l; //I know I shouldnt but this felt better than changing the header file...
+    (void)u;
     fl_t list = (fl_t)f;
     uintptr_t start = (uintptr_t)base;
     uintptr_t address = (uintptr_t)mem;
@@ -155,37 +156,3 @@ extern void freelistprint(FreeList f, int l, int u) {
     }
 }
 
-extern int freelistsize_debug(FreeList f, void *base, void *mem, int l, int u) {
-    fl_t list = (fl_t)f;
-    size_t byte_offset = (size_t)((char *)mem - (char *)base);
-    
-    printf("\n=== FREELISTSIZE DEBUG START ===\n");
-    printf("  Base Address: %p\n", base);
-    printf("  Target Mem:   %p\n", mem);
-    printf("  Byte Offset:  %zu (0x%zx)\n", byte_offset, byte_offset);
-    printf("  Scanning from u = %d down to l = %d\n", u, l);
-
-    for (int candidate_level = u; candidate_level >= l; candidate_level--) {
-        size_t block_size = e2size(candidate_level);
-        
-        int aligned = (block_size > 0 && (byte_offset % block_size) == 0);
-        int bbm_val = -1;
-
-        if (aligned && list->bbms[candidate_level] != NULL) {
-            bbm_val = bbmtst(list->bbms[candidate_level], base, mem, candidate_level);
-        }
-
-        printf("  [Level %2d] size = %-6zu | aligned = %d | bbm state = %d\n", 
-               candidate_level, block_size, aligned, bbm_val);
-
-        if (aligned && list->bbms[candidate_level] != NULL && bbm_val == 0) {
-            printf("  >>> MATCH FOUND at level %d (block size %zu)!\n", candidate_level, block_size);
-            printf("=== FREELISTSIZE DEBUG END ===\n\n");
-            return candidate_level;
-        }
-    }
-
-    printf("  >>> NO MATCH FOUND. Returning -1.\n");
-    printf("=== FREELISTSIZE DEBUG END ===\n\n");
-    return -1;
-}
