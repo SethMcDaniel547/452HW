@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-//calls mmap
+//calls mmap to get a pool of memory
 extern void *mmalloc(size_t size) {
     return mmap(0,size,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
 }
@@ -19,7 +19,7 @@ extern size_t divup(size_t n, size_t d) {
     return (n + d - 1) / d;
 }
 
-//convert num bits to num bytes by dividing or something
+//convert num bits to num bytes by bit shift
 extern size_t bits2bytes(size_t bits) {
     return divup(bits, bitsperbyte);
 }

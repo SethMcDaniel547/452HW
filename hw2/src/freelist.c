@@ -20,6 +20,7 @@ struct freelist_internal {
 
 typedef struct freelist_internal *fl_t;
 
+//This makes the freelist that you will pass in for the other functions
 extern FreeList freelistcreate(size_t size, void *base, int l, int u) {
     fl_t f = (fl_t)mmalloc(sizeof(struct freelist_internal));
     if (!f) return NULL;
@@ -45,6 +46,7 @@ extern FreeList freelistcreate(size_t size, void *base, int l, int u) {
     return (FreeList)f;
 }
 
+//deletes the freelist and frees up what was stored
 extern void     freelistdelete(FreeList f, int l, int u) {
     if (!f) return;
     fl_t list = (fl_t)f;
@@ -58,6 +60,7 @@ extern void     freelistdelete(FreeList f, int l, int u) {
     mmfree(list, sizeof(struct freelist_internal));
 }
 
+//grabs a block of memory for the user and updates the freelist and bitmap
 extern void *freelistalloc(FreeList f, void *base, int e, int l) {
     (void)l; //I know I shouldnt but this felt better than changing the header file...
     fl_t list = (fl_t)f;
@@ -86,6 +89,7 @@ extern void *freelistalloc(FreeList f, void *base, int e, int l) {
     return block;
 }
 
+//frees up the block at the passed in mem
 extern void  freelistfree(FreeList f, void *base, void *mem, int e, int l) {
     (void)l; //I know I shouldnt but this felt better than changing the header file...
     fl_t list = (fl_t)f;
@@ -117,6 +121,7 @@ extern void  freelistfree(FreeList f, void *base, void *mem, int e, int l) {
     list->allocated[index] = 0;
 }
 
+//figures out the size of the block of memory from the mem pointer
 extern int freelistsize(FreeList f, void *base, void *mem, int l, int u) {
     (void)l; //I know I shouldnt but this felt better than changing the header file...
     (void)u;
@@ -137,6 +142,7 @@ extern int freelistsize(FreeList f, void *base, void *mem, int l, int u) {
     return list->allocated[index] - 1;
 }
 
+//debug tool to see whats going on in freelist
 extern void freelistprint(FreeList f, int l, int u) {
     fl_t list = (fl_t)f;
     printf("FreeList print levels %d to %d\n", l, u);

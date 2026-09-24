@@ -14,6 +14,7 @@ struct balloc_internal {
 
 typedef struct balloc_internal *bpool_t;
 
+//Creates a balloc struct that will be passed in with the other methods
 Balloc bcreate(unsigned int size, int l, int u) {
     int size_e = size2e(size);
     int pool_e = (size_e > u) ? size_e : u;
@@ -45,6 +46,7 @@ Balloc bcreate(unsigned int size, int l, int u) {
     return (Balloc)pool;
 }
 
+//Deletes the balloc struct after freeing all allocated memory
 void   bdelete(Balloc ba) {
     //deallocates an allocator
     if (!ba) return;
@@ -55,6 +57,7 @@ void   bdelete(Balloc ba) {
     mmfree(pool, sizeof(struct balloc_internal));
 }
 
+//Grabs a block of memory and returns it as a void*
 void *balloc(Balloc ba, unsigned int size) {
     if (!ba) return NULL;
     bpool_t pool = (bpool_t)ba;
@@ -68,6 +71,7 @@ void *balloc(Balloc ba, unsigned int size) {
     return freelistalloc(pool->freelist, pool->base, e, pool->l);
 }
 
+//frees the memory at the void* passed in
 void  bfree(Balloc ba, void *mem) {
     //Grab that block of memory and overwrite the first part of it to store
     //the pointer to the next block and put it at the front
@@ -80,6 +84,7 @@ void  bfree(Balloc ba, void *mem) {
     freelistfree(pool->freelist, pool->base, mem, e, pool->l);
 }
 
+//returns the size of the allocated block
 unsigned int bsize(Balloc ba, void *mem) {
     if (!ba || !mem) return 0;
     bpool_t pool = (bpool_t)ba;
@@ -90,12 +95,13 @@ unsigned int bsize(Balloc ba, void *mem) {
     return (unsigned int)e2size(e);
 }
 
+//a debug tool so you can see what is going on inside the allocater and freelist
 void bprint(Balloc ba) {
     //writes a textual representation of an allocator to stdout: a valuable debugging tool
     if (!ba) return;
     bpool_t pool = (bpool_t)ba;
 
-    printf("=== Buddy Allocator Debug Info ===\n");
+    printf("Buddy Allocator Debug Info\n");
     printf("Base Address: %p\n", pool->base);
     printf("Total Pool Size: %zu bytes (2^%d)\n", pool->size, ((size2e(pool->size) > pool->u) ? size2e(pool->size) : pool->u));
     printf("Constraints : l = %d (min block: 2^%d = %zu bytes)\n", pool->l, pool->l, e2size(pool->l));
