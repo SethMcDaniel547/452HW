@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "utils.h"
 #include "bm.h"
 #include "bbm.h"
@@ -12,6 +13,7 @@ struct freelist_internal {
     size_t size;
     int l;
     int u;
+    unsigned char *allocated;
     BBM bbms[64];
     void *heads[64];
 };
@@ -25,6 +27,12 @@ extern FreeList freelistcreate(size_t size, void *base, int l, int u) {
     f->size = size;
     f->l = l;
     f->u = u;
+    f->allocated = mmalloc(divup(size, e2size(l)));
+    if (!f->allocated) {
+        mmfree(f, sizeof(struct freelist_internal));
+        return NULL;
+    }
+    memset(f->allocated, 0, divup(size, e2size(l)));
 
     for (int k = l; k <= u; k++) {
         f->bbms[k] = bbmcreate(size, k);
@@ -46,6 +54,7 @@ extern void     freelistdelete(FreeList f, int l, int u) {
             bbmdelete(list->bbms[k]);
         }
     }
+    mmfree(list->allocated, divup(list->size, e2size(list->l)));
     mmfree(list, sizeof(struct freelist_internal));
 }
 
@@ -71,6 +80,8 @@ extern void *freelistalloc(FreeList f, void *base, int e, int l) {
         bbmclr(list->bbms[k], base, buddy, k);
     }
     bbmclr(list->bbms[e], base, block, e);
+    list->allocated[((char *)block - (char *)base) / e2size(list->l)] =
+        (unsigned char)(e + 1);
 
     return block;
 }
@@ -78,6 +89,7 @@ extern void *freelistalloc(FreeList f, void *base, int e, int l) {
 extern void  freelistfree(FreeList f, void *base, void *mem, int e, int l) {
     (void)l; //I know I shouldnt but this felt better than changing the header file...
     fl_t list = (fl_t)f;
+    size_t index = (size_t)((char *)mem - (char *)base) / e2size(list->l);
     int k = e;
     while (k < list->u) {
         void *buddy = baddrinv(base, mem, k);
@@ -102,21 +114,26 @@ extern void  freelistfree(FreeList f, void *base, void *mem, int e, int l) {
     }
     *(void **)mem = list->heads[k];
     list->heads[k] = mem;
+    list->allocated[index] = 0;
 }
 
 extern int freelistsize(FreeList f, void *base, void *mem, int l, int u) {
-    size_t byte_offset = (size_t)((char *)mem - (char *)base);
-    for (int candidate_level = u; candidate_level >= l; candidate_level--) {
-        size_t block_size = e2size(candidate_level);
-        if (block_size > 0 && (byte_offset % block_size) == 0) {
-            if (((fl_t)f)->bbms[candidate_level] != NULL) {
-                if (bbmtst(((fl_t)f)->bbms[candidate_level], base, mem, candidate_level) == 0) {
-                    return candidate_level;
-                }
-            }
-        }
+    (void)l; //I know I shouldnt but this felt better than changing the header file...
+    fl_t list = (fl_t)f;
+    uintptr_t start = (uintptr_t)base;
+    uintptr_t address = (uintptr_t)mem;
+    size_t min_size = e2size(l);
+
+    if (address < start || address >= start + list->size ||
+        (address - start) % min_size != 0) {
+        return -1;
     }
-    return -1;
+
+    size_t index = (address - start) / min_size;
+    if (index >= divup(list->size, min_size) || list->allocated[index] == 0) {
+        return -1;
+    }
+    return list->allocated[index] - 1;
 }
 
 extern void freelistprint(FreeList f, int l, int u) {

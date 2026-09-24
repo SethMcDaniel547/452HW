@@ -50,7 +50,7 @@ void   bdelete(Balloc ba) {
     if (!ba) return;
     bpool_t pool = (bpool_t)ba;
 
-    freelistdelete(pool->freelist, pool->l, (size2e(pool->size) > pool->u));
+    freelistdelete(pool->freelist, pool->l, size2e(pool->size));
     mmfree(pool->base, pool->size);
     mmfree(pool, sizeof(struct balloc_internal));
 }
@@ -75,7 +75,6 @@ void  bfree(Balloc ba, void *mem) {
     bpool_t pool = (bpool_t)ba;
     int e = freelistsize(pool->freelist, pool->base, mem, pool->l, ((size2e(pool->size) > pool->u) ? size2e(pool->size) : pool->u));
     if (e < 0) {
-        fprintf(stderr, "bfree: invalid memory pointer or already freed\n");
         return;
     }
     freelistfree(pool->freelist, pool->base, mem, e, pool->l);
