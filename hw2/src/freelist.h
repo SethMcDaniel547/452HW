@@ -5,7 +5,7 @@
 
 typedef void *FreeList;
 
-extern FreeList freelistcreate(size_t size, int l, int u);
+extern FreeList freelistcreate(size_t size, void *base, int l, int u);
 extern void     freelistdelete(FreeList f, int l, int u);
 
 extern void *freelistalloc(FreeList f, void *base, int e, int l);

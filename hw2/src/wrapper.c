@@ -1,5 +1,5 @@
 #include <string.h>
-
+#include <unistd.h>
 #include "balloc.h"
 
 static Balloc bp=0;
@@ -7,6 +7,7 @@ static Balloc bp=0;
 #include <stdio.h>
 
 extern void *malloc(size_t size) {
+  //write(STDOUT_FILENO, "Using Balloc Version\n", 23);
   bp=bp ? bp : bcreate(4096,4,12);
   return balloc(bp,size);
 }
