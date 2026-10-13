@@ -2,6 +2,7 @@
 #include "bm.h"
 #include "utils.h"
 
+//This figures out how big the bitmap needs to be
 static size_t mapsize(size_t size, int e) {
   size_t blocksize=e2size(e);
   size_t blocks=divup(size,blocksize);
@@ -9,49 +10,60 @@ static size_t mapsize(size_t size, int e) {
   return buddies;
 }
 
+//get the bitmap bit index for a specfic address
 static size_t bitaddr(void *base, void *mem, int e) {
   size_t addr=baddrclr(base,mem,e)-base;
   size_t blocksize=e2size(e);
   return addr/blocksize/2;
 }
 
+//makes a new buddy bit map
 extern BBM bbmcreate(size_t size, int e) {
   return bmcreate(mapsize(size,e));
 }
 
+//deletes the buddy bit map
 extern void bbmdelete(BBM b) {
   bmdelete(b);
 }
 
+//sets the bitmap bit (makes it 1)
 extern void bbmset(BBM b, void *base, void *mem, int e) {
   bmset(b,bitaddr(base,mem,e));
 }
 
+//clears the bitmap bit (makes it 0)
 extern void bbmclr(BBM b, void *base, void *mem, int e) {
   bmclr(b,bitaddr(base,mem,e));
 }
 
+//tests the bit at the specfic address in the buddy bit map
 extern int bbmtst(BBM b, void *base, void *mem, int e) {
   return bmtst(b,bitaddr(base,mem,e));
 }
 
+//print buddy bit map for debug
 extern void bbmprt(BBM b) { bmprt(b); }
 
+// sets the e-th bit relative to the base and returns the address
 extern void *baddrset(void *base, void *mem, int e) {
   unsigned int mask=1<<e;
   return base+((mem-base)|mask);
 }
 
+// clears the e-th bit relative to the base and returns the address
 extern void *baddrclr(void *base, void *mem, int e) {
   unsigned int mask=~(1<<e);
   return base+((mem-base)&mask);
 }
 
+// inverts the e-th bit relative to the base and returns the address
 extern void *baddrinv(void *base, void *mem, int e) {
   unsigned int mask=1<<e;
   return base+((mem-base)^mask);
 }
 
+// tests the e-th bit relative to the base and returns either 0 or 1
 extern int baddrtst(void *base, void *mem, int e) {
   unsigned int mask=1<<e;
   return (mem-base)&mask;
