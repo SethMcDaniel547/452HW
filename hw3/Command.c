@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <string.h>
+#include <readline/history.h>
 
 #include "Command.h"
 #include "error.h"
@@ -9,6 +12,8 @@
 typedef struct {
   char *file;
   char **argv;
+  char *input;
+  char *output;
 } *CommandRep;
 
 #define BIARGS CommandRep r, int *eof, Jobs jobs
@@ -18,6 +23,7 @@ typedef struct {
 
 static char *owd=0;
 static char *cwd=0;
+static void bi_history(BIARGS);
 
 static void builtin_args(CommandRep r, int n) {
   char **argv=r->argv;
@@ -32,25 +38,30 @@ BIDEFN(exit) {
 }
 
 BIDEFN(pwd) {
+  /* Phase 1, task: implement pwd in the shell process. */
   builtin_args(r,0);
-  if (!cwd)
-    cwd=getcwd(0,0);
-  printf("%s\n",cwd);
+  char *path=getcwd(0,0);
+  if (!path) ERROR("getcwd() failed");
+  printf("%s\n",path);
+  free(path);
 }
 
 BIDEFN(cd) {
+  /* Phase 1, task: implement cd and the previous-directory switch. */
   builtin_args(r,1);
+  char *old=getcwd(0,0);
+  char *target;
   if (strcmp(r->argv[1],"-")==0) {
-    char *twd=cwd;
-    cwd=owd;
-    owd=twd;
+    target=owd ? strdup(owd) : 0;
   } else {
-    if (owd) free(owd);
-    owd=cwd;
-    cwd=strdup(r->argv[1]);
+    target=strdup(r->argv[1]);
   }
-  if (cwd && chdir(cwd))
-    ERROR("chdir() failed"); // warn
+  if (!target || chdir(target)) {
+    free(old); free(target);
+    ERROR("chdir() failed");
+  }
+  free(owd); owd=old;
+  free(cwd); cwd=target;
 }
 
 static int builtin(BIARGS) {
@@ -62,6 +73,7 @@ static int builtin(BIARGS) {
     BIENTRY(exit),
     BIENTRY(pwd),
     BIENTRY(cd),
+    BIENTRY(history),
     {0,0}
   };
   int i;
@@ -70,7 +82,22 @@ static int builtin(BIARGS) {
       builtins[i].f(r,eof,jobs);
       return 1;
     }
+
   return 0;
+}
+
+BIDEFN(history) {
+  /* Phase 6, task: print GNU History entries with history_list. */
+  builtin_args(r,0);
+  HIST_ENTRY **entries=history_list();
+  if (entries)
+    for (int i=0; entries[i]; i++)
+      printf("%d %s\n",i+history_base,entries[i]->line);
+}
+
+static int is_builtin(CommandRep r) {
+  return !strcmp(r->file,"exit") || !strcmp(r->file,"pwd") ||
+         !strcmp(r->file,"cd") || !strcmp(r->file,"history");
 }
 
 static char **getargs(T_words words) {
@@ -93,40 +120,81 @@ static char **getargs(T_words words) {
   return argv;
 }
 
-extern Command newCommand(T_words words) {
+extern Command newCommand(T_command command) {
   CommandRep r=(CommandRep)malloc(sizeof(*r));
   if (!r)
     ERROR("malloc() failed");
-  r->argv=getargs(words);
+  r->argv=getargs(command->words);
   r->file=r->argv[0];
+  r->input=command->input ? strdup(command->input) : 0;
+  r->output=command->output ? strdup(command->output) : 0;
   return r;
 }
 
 static void child(CommandRep r, int fg) {
   int eof=0;
   Jobs jobs=newJobs();
-  if (builtin(r,&eof,jobs))
+  if (builtin(r,&eof,jobs)) {
+    freeJobs(jobs);
+    _exit(0);
+  }
     return;
   execvp(r->argv[0],r->argv);
-  ERROR("execvp() failed");
-  exit(0);
+  fprintf(stderr,"%s: %s\n",r->file,strerror(errno));
+  _exit(127);
 }
 
-extern void execCommand(Command command, Pipeline pipeline, Jobs jobs,
-			int *jobbed, int *eof, int fg) {
+static int redirect(CommandRep r, int input_fd, int output_fd) {
+  int fd;
+  if (input_fd != STDIN_FILENO && dup2(input_fd,STDIN_FILENO) < 0) return -1;
+  if (output_fd != STDOUT_FILENO && dup2(output_fd,STDOUT_FILENO) < 0) return -1;
+  if (r->input) {
+    fd=open(r->input,O_RDONLY);
+    if (fd < 0) return -1;
+    if (dup2(fd,STDIN_FILENO) < 0) { close(fd); return -1; }
+    close(fd);
+  }
+  if (r->output) {
+    fd=open(r->output,O_WRONLY|O_CREAT|O_TRUNC,0666);
+    if (fd < 0) return -1;
+    if (dup2(fd,STDOUT_FILENO) < 0) { close(fd); return -1; }
+    close(fd);
+  }
+  return 0;
+}
+
+extern int execCommand(Command command, Pipeline pipeline, Jobs jobs,
+                       int input_fd, int output_fd, int *eof, int fg) {
   CommandRep r=command;
-  if (fg && builtin(r,eof,jobs))
-    return;
-  if (!*jobbed) {
-    *jobbed=1;
-    addJobs(jobs,pipeline);
+  /* Phase 1, task: run foreground builtins in the shell process. */
+  if (fg && input_fd == STDIN_FILENO && output_fd == STDOUT_FILENO &&
+      builtin(r,eof,jobs))
+    return 0;
+  if (fg && is_builtin(r)) {
+    int saved_in=dup(STDIN_FILENO), saved_out=dup(STDOUT_FILENO);
+    if (saved_in < 0 || saved_out < 0 || redirect(r,input_fd,output_fd) < 0)
+      ERROR("redirection failed");
+    builtin(r,eof,jobs);
+    dup2(saved_in,STDIN_FILENO); dup2(saved_out,STDOUT_FILENO);
+    close(saved_in); close(saved_out);
+    return 0;
   }
   int pid=fork();
   if (pid==-1)
     ERROR("fork() failed");
-  if (pid==0)
+  if (pid==0) {
+    /* Phase 3, task: apply redirections in the child before exec. */
+    if (redirect(r,input_fd,output_fd) < 0) {
+      fprintf(stderr,"%s: redirection failed: %s\n",r->file,strerror(errno));
+      _exit(126);
+    }
     child(r,fg);
+  }
+  return pid;
 }
+
+extern char *commandInput(Command command) { return ((CommandRep)command)->input; }
+extern char *commandOutput(Command command) { return ((CommandRep)command)->output; }
 
 extern void freeCommand(Command command) {
   CommandRep r=command;
@@ -134,6 +202,8 @@ extern void freeCommand(Command command) {
   while (*argv)
     free(*argv++);
   free(r->argv);
+  free(r->input);
+  free(r->output);
   free(r);
 }
 

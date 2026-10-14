@@ -16,8 +16,8 @@ int main() {
   Jobs jobs=newJobs();
   char *prompt=0;
 
+  using_history();
   if (isatty(fileno(stdin))) {
-    using_history();
     read_history(".history");
     prompt="$ ";
   } else {
@@ -26,6 +26,7 @@ int main() {
   }
 
   while (!eof) {
+    reapJobs(jobs);
     char *line=readline(prompt);
     if (!line)
       break;
@@ -35,6 +36,9 @@ int main() {
     free(line);
   }
 
+  /* Phase 6, task: wait for active background jobs during shell shutdown. */
+  waitJobs(jobs);
+  freeJobs(jobs);
   if (isatty(fileno(stdin))) {
     write_history(".history");
     rl_clear_history();

@@ -1,0 +1,1 @@
+cat < Test/Test_redirection/input.txt > Test/Test_redirection/output.txt ; cat < Test/Test_redirection/output.txt

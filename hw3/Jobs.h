@@ -8,6 +8,9 @@ typedef void *Jobs;
 extern Jobs newJobs();
 extern void addJobs(Jobs jobs, Pipeline pipeline);
 extern int sizeJobs(Jobs jobs);
+extern void addJobPid(Jobs jobs, int pid);
+extern void reapJobs(Jobs jobs);
+extern void waitJobs(Jobs jobs);
 extern void freeJobs(Jobs jobs);
 
 #endif

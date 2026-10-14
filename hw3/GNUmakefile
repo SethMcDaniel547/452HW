@@ -1,16 +1,21 @@
 prog=shell
+objs=$(addsuffix .o,$(basename $(wildcard *.c)))
+ccflags=-g -Wall -MMD -D_GNU_SOURCE
+ldflags=-g -lreadline -lncurses
 
-ldflags:=-lreadline -lncurses
+.SUFFIXES:
+%.o: %.c
+	gcc -o $@ -c $< $(ccflags)
 
-include ../GNUmakefile
+shell: $(objs)
+	gcc -o $@ $^ $(ldflags)
 
-try: $(objs) libdeq.so
-	gcc -o $@ $(objs) $(ldflags) -L. -ldeq -Wl,-rpath=.
-
-trytest: try
+test: shell
 	Test/run $<
 
-test: $(prog)
-	Test/run $<
+Parser.o: ccflags += -Wno-unused-function
 
-Parser.o:ccflags+=-Wno-unused-function
+clean:
+	rm -f $(prog) *.o *.d libdeq.so
+
+sinclude *.d
