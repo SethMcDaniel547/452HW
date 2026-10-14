@@ -138,7 +138,6 @@ static void child(CommandRep r, int fg) {
     freeJobs(jobs);
     _exit(0);
   }
-    return;
   execvp(r->argv[0],r->argv);
   fprintf(stderr,"%s: %s\n",r->file,strerror(errno));
   _exit(127);
