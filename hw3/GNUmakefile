@@ -18,7 +18,7 @@ shell: $(objs)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 test: shell
-	./Test/run $<
+	./Test/test_commands.sh $(CURDIR)/$<
 
 Parser.o: CFLAGS += -Wno-unused-function
 
