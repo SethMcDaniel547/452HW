@@ -1,9 +1,95 @@
 #!/bin/bash
 
-prg=./$1
+set -u
 
-for t in Test/Test_* ; do
-    echo ${t##*/}
-    $prg <$t/inp 2>&1 >$t/out
-    diff -q -w $t/exp $t/out 2>&1 >/dev/null || echo ${t##*/} failed >&2
-done
+root=$(cd "$(dirname "$0")/.." && pwd)
+prg=${1:-"$root/shell"}
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+
+cd "$root" || exit 1
+
+echo "Building shell..."
+if ! make -B -f GNUmakefile shell; then
+    echo "build failed" >&2
+    exit 1
+fi
+
+failures=0
+
+run_case() {
+    local name=$1
+    local command=$2
+    local expected=$3
+    local unordered=${4:-false}
+    local output="$tmpdir/$name.out"
+    local actual="$output"
+    local expected_output="$expected"
+
+    printf '%s\n' "$command" | "$prg" >"$output" 2>&1
+
+    # Only cases with multiple independent background jobs are order-insensitive.
+    if [ "$unordered" = true ]; then
+        actual="$tmpdir/$name.actual.sorted"
+        expected_output="$tmpdir/$name.expected.sorted"
+        sort "$output" >"$actual"
+        sort "$expected" >"$expected_output"
+    fi
+
+    if diff -u "$expected_output" "$actual" >/dev/null; then
+        printf 'PASS %-2s %s\n' "$name" "$command"
+    else
+        printf 'FAIL %-2s %s\n' "$name" "$command" >&2
+        diff -u "$expected_output" "$actual" >&2 || true
+        failures=$((failures + 1))
+    fi
+}
+
+initial_pwd=$(pwd)
+
+cat >"$tmpdir/cd-sequence.expected" <<EOF
+/etc
+EOF
+run_case "cd-sequence" 'cd /etc ; pwd' "$tmpdir/cd-sequence.expected"
+
+cat >"$tmpdir/cd-pipeline.expected" <<EOF
+$initial_pwd
+EOF
+run_case "cd-pipeline" 'cd /etc | pwd' "$tmpdir/cd-pipeline.expected"
+
+cat >"$tmpdir/pwd-pipeline.expected" <<EOF
+$initial_pwd
+$initial_pwd
+EOF
+run_case "pwd-pipeline" 'pwd | cat ; cd /etc | pwd' "$tmpdir/pwd-pipeline.expected"
+
+cat >"$tmpdir/background.expected" <<EOF
+$initial_pwd
+$initial_pwd
+EOF
+run_case "background" 'pwd & cd /etc & pwd' "$tmpdir/background.expected" true
+run_case "sequence-background" 'pwd ; cd /etc & pwd' "$tmpdir/background.expected"
+
+cat >"$tmpdir/background-sequence.expected" <<EOF
+$initial_pwd
+/etc
+EOF
+run_case "background-sequence" 'pwd & cd /etc ; pwd' "$tmpdir/background-sequence.expected"
+
+cat >"$tmpdir/history.expected" <<EOF
+1 history
+EOF
+run_case "history" 'history' "$tmpdir/history.expected"
+
+printf 'redirected\n' >"$tmpdir/input.txt"
+cat >"$tmpdir/redirection.expected" <<EOF
+redirected
+EOF
+run_case "redirection" "cat < $tmpdir/input.txt > $tmpdir/output.txt ; cat < $tmpdir/output.txt" "$tmpdir/redirection.expected"
+
+if [ "$failures" -ne 0 ]; then
+    printf '%d shell command test(s) failed\n' "$failures" >&2
+    exit 1
+fi
+
+echo "All shell command tests passed"

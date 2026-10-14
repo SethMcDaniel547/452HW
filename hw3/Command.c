@@ -135,6 +135,8 @@ static void child(CommandRep r, int fg) {
   int eof=0;
   Jobs jobs=newJobs();
   if (builtin(r,&eof,jobs)) {
+    fflush(stdout);
+    fflush(stderr);
     freeJobs(jobs);
     _exit(0);
   }
@@ -178,6 +180,7 @@ extern int execCommand(Command command, Pipeline pipeline, Jobs jobs,
     close(saved_in); close(saved_out);
     return 0;
   }
+  fflush(NULL);
   int pid=fork();
   if (pid==-1)
     ERROR("fork() failed");

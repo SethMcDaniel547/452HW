@@ -30,7 +30,7 @@ static void i_pipeline(T_pipeline t, Pipeline pipeline) {
 static void i_sequence(T_sequence t, Sequence sequence) {
   if (!t)
     return;
-  Pipeline pipeline=newPipeline(1);
+  Pipeline pipeline=newPipeline(!t->op || strcmp(t->op,"&") != 0);
   i_pipeline(t->pipeline,pipeline);
   addSequence(sequence,pipeline);
   i_sequence(t->sequence,sequence);
