@@ -57,7 +57,6 @@ static void execute(Pipeline pipeline, Jobs jobs, int *eof) {
 }
 
 extern void execPipeline(Pipeline pipeline, Jobs jobs, int *eof) {
-  PipelineRep r=(PipelineRep)pipeline;
   execute(pipeline,jobs,eof);
   freePipeline(pipeline);
 }

@@ -59,6 +59,9 @@ run_case "cd-pipeline" 'cd /etc | pwd' "$tmpdir/cd-pipeline.expected"
 printf '%s\n%s\n' "$initial_pwd" "$initial_pwd" >"$tmpdir/pwd-pipeline.expected"
 run_case "pwd-pipeline" 'pwd | cat ; cd /etc | pwd' "$tmpdir/pwd-pipeline.expected"
 
+printf '%s\n' "$initial_pwd" >"$tmpdir/cd-previous.expected"
+run_case "cd-previous" 'cd /tmp ; cd - ; pwd' "$tmpdir/cd-previous.expected"
+
 printf '%s\n%s\n' "$initial_pwd" "$initial_pwd" >"$tmpdir/background.expected"
 run_case "background" 'pwd & cd /etc & pwd' "$tmpdir/background.expected" true
 run_case "sequence-background" 'pwd ; cd /etc & pwd' "$tmpdir/background.expected"
@@ -72,6 +75,9 @@ run_case "history" 'history' "$tmpdir/history.expected"
 printf 'redirected\n' >"$tmpdir/input.txt"
 printf 'redirected\n' >"$tmpdir/redirection.expected"
 run_case "redirection" "cat < $tmpdir/input.txt > $tmpdir/output.txt ; cat < $tmpdir/output.txt" "$tmpdir/redirection.expected"
+
+printf '%s\n' "$initial_pwd" >"$tmpdir/builtin-redirection.expected"
+run_case "builtin-redirection" "pwd > $tmpdir/builtin-pwd.txt ; cat < $tmpdir/builtin-pwd.txt" "$tmpdir/builtin-redirection.expected"
 
 if [ "$failures" -ne 0 ]; then
     printf '%d shell command test(s) failed\n' "$failures" >&2

@@ -169,6 +169,7 @@ extern int execCommand(Command command, Pipeline pipeline, Jobs jobs,
   CommandRep r=command;
   /* Phase 1, task: run foreground builtins in the shell process. */
   if (fg && input_fd == STDIN_FILENO && output_fd == STDOUT_FILENO &&
+      !r->input && !r->output &&
       builtin(r,eof,jobs))
     return 0;
   if (fg && is_builtin(r)) {
