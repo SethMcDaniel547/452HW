@@ -2,8 +2,6 @@ CC ?= gcc
 prog := shell
 objs := $(addsuffix .o,$(basename $(wildcard *.c)))
 
-# Ubuntu supplies these flags through libreadline-dev and libncurses-dev.
-# pkg-config is optional; the library names below remain the fallback.
 CPPFLAGS += -D_GNU_SOURCE $(shell pkg-config --cflags readline ncurses 2>/dev/null)
 CFLAGS += -g -Wall -MMD
 LDFLAGS += -g
