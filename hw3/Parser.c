@@ -46,7 +46,6 @@ static T_words p_words() {
     return 0;
   T_words words=new_words();
   words->word=word;
-  /* Phase 2/3, tasks: stop words at sequence, pipeline, and redirection operators. */
   if (cmp("|") || cmp("&") || cmp(";") || cmp("<") || cmp(">"))
     return words;
   words->words=p_words();
@@ -59,7 +58,7 @@ static T_command p_command() {
     return 0;
   T_command command=new_command();
   command->words=words;
-  /* Phase 3, task: parse input and output redirection operands. */
+  //redirection operands
   if (eat("<")) {
     char *s=curr();
     if (!s || !strcmp(s,"<") || !strcmp(s,">") || !strcmp(s,"|") ||

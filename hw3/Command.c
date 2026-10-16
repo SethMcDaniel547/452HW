@@ -29,7 +29,7 @@ static void builtin_args(CommandRep r, int n) {
   char **argv=r->argv;
   for (n++; *argv++; n--);
   if (n)
-    ERROR("wrong number of arguments to builtin command"); // warn
+    ERROR("wrong number of arguments to builtin command");
 }
 
 BIDEFN(exit) {
@@ -38,7 +38,7 @@ BIDEFN(exit) {
 }
 
 BIDEFN(pwd) {
-  /* Phase 1, task: implement pwd in the shell process. */
+  //pwd in the shell process
   builtin_args(r,0);
   char *path=getcwd(0,0);
   if (!path) ERROR("getcwd() failed");
@@ -47,7 +47,7 @@ BIDEFN(pwd) {
 }
 
 BIDEFN(cd) {
-  /* Phase 1, task: implement cd and the previous-directory switch. */
+  //cd and the previous-directory switch
   builtin_args(r,1);
   char *old=getcwd(0,0);
   char *target;
@@ -87,7 +87,7 @@ static int builtin(BIARGS) {
 }
 
 BIDEFN(history) {
-  /* Phase 6, task: print GNU History entries with history_list. */
+  //print GNU History entries with history_list
   builtin_args(r,0);
   HIST_ENTRY **entries=history_list();
   if (entries)
@@ -167,7 +167,7 @@ static int redirect(CommandRep r, int input_fd, int output_fd) {
 extern int execCommand(Command command, Pipeline pipeline, Jobs jobs,
                        int input_fd, int output_fd, int *eof, int fg) {
   CommandRep r=command;
-  /* Phase 1, task: run foreground builtins in the shell process. */
+  //builtins in the shell process
   if (fg && input_fd == STDIN_FILENO && output_fd == STDOUT_FILENO &&
       !r->input && !r->output &&
       builtin(r,eof,jobs))
@@ -186,7 +186,7 @@ extern int execCommand(Command command, Pipeline pipeline, Jobs jobs,
   if (pid==-1)
     ERROR("fork() failed");
   if (pid==0) {
-    /* Phase 3, task: apply redirections in the child before exec. */
+    // apply redirections to the child before exec
     if (redirect(r,input_fd,output_fd) < 0) {
       fprintf(stderr,"%s: redirection failed: %s\n",r->file,strerror(errno));
       _exit(126);

@@ -47,7 +47,6 @@ static void execute(Pipeline pipeline, Jobs jobs, int *eof) {
     if (pid) pids[i]=pid; else pids[i]=0;
   }
   if (previous != STDIN_FILENO) close(previous);
-  /* Phase 1/5, tasks: wait for foreground commands and wire pipelines. */
   if (r->fg) {
     for (int i=0; i<n; i++) if (pids[i])
       while (waitpid(pids[i],0,0) < 0) {}

@@ -8,7 +8,6 @@ typedef enum { HEAD, TAIL } End;
 typedef struct Node { struct Node *next, *prev; Data data; } Node;
 typedef struct { Node *ends[2]; int len; } Rep;
 
-/* Phase 0, task: provide the HW1 deque implementation locally. */
 static Rep *rep(Deq q) { if (!q) ERROR("zero pointer"); return q; }
 
 static void put(Rep *r, End e, Data d) {

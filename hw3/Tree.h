@@ -20,7 +20,6 @@ struct T_pipeline {
 
 struct T_command {
   T_words words;
-  /* Phase 3, task: retain optional command redirection operands. */
   char *input;
   char *output;
 };

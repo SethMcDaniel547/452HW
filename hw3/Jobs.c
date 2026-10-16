@@ -16,7 +16,7 @@ extern void addJobs(Jobs jobs, Pipeline pipeline) {
   deq_tail_put(jobs,pipeline);
 }
 
-/* Phase 4, task: retain background process IDs and reap them without zombies. */
+//keep background process IDs
 extern void addJobPid(Jobs jobs, int pid) {
   int *stored=malloc(sizeof *stored);
   if (!stored) ERROR("malloc() failed");
@@ -35,7 +35,7 @@ extern void reapJobs(Jobs jobs) {
 }
 
 extern void waitJobs(Jobs jobs) {
-  /* Phase 6, task: wait for every active background process on exit. */
+  // wait for every active background process on exit
   while (deq_len(jobs)) {
     int *pid=deq_head_get(jobs);
     while (waitpid(*pid,0,0) < 0) {}

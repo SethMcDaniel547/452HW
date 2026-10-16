@@ -36,7 +36,7 @@ int main() {
     free(line);
   }
 
-  /* Phase 6, task: wait for active background jobs during shell shutdown. */
+  //wait for active background jobs before shutdown
   waitJobs(jobs);
   freeJobs(jobs);
   if (isatty(fileno(stdin))) {
