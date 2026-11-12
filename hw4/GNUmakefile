@@ -29,7 +29,7 @@ $(prog): $(objects)
 check: $(prog)
 	@set -eu; for run in 1 2 3; do \
 	  output=$$(mktemp); \
-	  DISPLAY= ./$(prog) >$$output; \
+	  DISPLAY= ./$(prog) | tee $$output; \
 	  test "$$(grep -c 'creating' $$output)" -eq 10; \
 	  test "$$(grep -c 'created' $$output)" -eq 10; \
 	  test "$$(grep -c 'whacking' $$output)" -eq 10; \
