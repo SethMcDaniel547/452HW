@@ -32,6 +32,14 @@ Run in root folder
 make clean
 ```
 
+### Running valgrind
+
+Run in root folder
+```
+make
+./vg
+```
+
 ## Project overview
-This updates the existing whack-a-mole game to be (more)multithreaded (technically the gui already was but now the moles are too). There is no user input, so its more of a simulation displayed in a GUI. It creates n producer threads that create moles and place them into one shared bounded queue, along with n consumer threads that remove and whack the moles. Since the threads run concurrently and each mole has different delays, the gui appears less sequential and a bit more random. The main multithreading trick used is a Mutex on the queue, and a couple of condition variables that state whether the queue is empty or full so the producers and consumers know when to wait when they need to.
+This updates the existing whack-a-mole game to be (more) multithreaded (technically the gui already was but now the moles are too). There is no user input, so its more of a simulation displayed in a GUI. It creates n producer threads that create moles and place them into one shared bounded queue, along with n consumer threads that remove and whack the moles. Since the threads run concurrently and each mole has different delays, the gui appears less sequential and a bit more random.
 
